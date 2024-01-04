@@ -4,17 +4,13 @@ import type { extract } from './tar';
 import * as process from 'process';
 import semver from 'semver';
 
-function loadTar(): Promise<typeof extract> {
-    // @ts-expect-error blah blah blah
-    return eval('import(\'../x.js\')').then((r) => r.default);
-}
 
 export default class ModuleLoader {
     basepath: string;
     cache: {
         [key: string]: unknown;
     } = {};
-    tar: typeof extract;
+    tar: typeof extract = require('../x');
     autoFixNotFounds: boolean;
 
     constructor(basepath: string, opt: {
@@ -24,10 +20,6 @@ export default class ModuleLoader {
         basepath = path.join(basepath, 'node_modules');
         this.basepath = basepath;
         fs.mkdir(path.join(basepath, '_RAW_'), { recursive: true });
-    }
-
-    async initTar(): Promise<typeof extract> {
-        return this.tar ??= await loadTar();
     }
 
     async download(url: string, filename: string): Promise<string> {
@@ -84,9 +76,7 @@ export default class ModuleLoader {
 
             await fs.mkdir(folder, { recursive: true });
 
-            // const tarx = await this.tar.init();
-
-            await (await this.initTar())({
+            await this.tar({
                 C: folder,
                 file: fpath,
                 strip: 1
