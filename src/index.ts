@@ -1,16 +1,15 @@
 import fs from 'fs/promises';
 import path from 'path';
-import type { extract } from '../tar';
 import * as process from 'process';
 import semver from 'semver';
-
+// @ts-expect-error - no types
+import x from '../x';
 
 export default class ModuleLoader {
     basepath: string;
     cache: {
         [key: string]: unknown;
     } = {};
-    tar: typeof extract = require('../x');
     autoFixNotFounds: boolean;
 
     constructor(basepath: string, opt: {
@@ -77,7 +76,7 @@ export default class ModuleLoader {
 
             await fs.mkdir(folder, { recursive: true });
 
-            await this.tar({
+            await x({
                 C: folder,
                 file: fpath,
                 strip: 1
@@ -98,7 +97,8 @@ export default class ModuleLoader {
 
                 await this.require(key, {
                     __require_stack: opt.__require_stack ? `${opt.__require_stack} -> ${module}@${version}` : `${module}@${version}`,
-                    version: vers
+                    version: vers,
+                    debug: opt.debug
                 });
             }
 
@@ -106,19 +106,29 @@ export default class ModuleLoader {
             try {
                 this.cache[`${module}@${version}`] = require(path.resolve(file));
             } catch (e) {
+                opt.debug && console.log('Error:', e);
+
                 if (this.autoFixNotFounds && e.code === 'MODULE_NOT_FOUND') {
+                    opt.debug && console.log('Auto fixing not found:', e.message.match(/'(.+)'/)?.[1] || '');
+
                     await this.require(e.message.match(/'(.+)'/)?.[1] || '', {
-                        __require_stack: opt.__require_stack ? `${opt.__require_stack} -> ${module}@${version}` : `${module}@${version}`
+                        __require_stack: opt.__require_stack ? `${opt.__require_stack} -> ${module}@${version}` : `${module}@${version}`,
+                        debug: opt.debug
                     });
 
                     this.cache[`${module}@${version}`] = require(path.resolve(file));
                 } else if (e.code === 'ERR_REQUIRE_ESM') {
                     try {
+                        opt.debug && console.log('Auto fixing ESM:', e.message.match(/'(.+)'/)?.[1] || '');
+
                         this.cache[`${module}@${version}`] = await eval(`import('${process.platform === 'win32' ? 'file://' : ''}' + Buffer.from('${Buffer.from(path.resolve(file).replace(/\\/g, '/')).toString('base64')}', 'base64').toString())`);
                     } catch (e) {
                         if (this.autoFixNotFounds && e.code === 'MODULE_NOT_FOUND') {
+                            opt.debug && console.log('Auto fixing not found:', e.message.match(/'(.+)'/)?.[1] || '');
+
                             await this.require(e.message.match(/'(.+)'/)?.[1] || '', {
-                                __require_stack: opt.__require_stack ? `${opt.__require_stack} -> ${module}@${version}` : `${module}@${version}`
+                                __require_stack: opt.__require_stack ? `${opt.__require_stack} -> ${module}@${version}` : `${module}@${version}`,
+                                debug: opt.debug
                             });
 
                             this.cache[`${module}@${version}`] = await eval(`import('${process.platform === 'win32' ? 'file://' : ''}' + Buffer.from('${Buffer.from(path.resolve(file).replace(/\\/g, '/')).toString('base64')}', 'base64').toString())`);
