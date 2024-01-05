@@ -9,7 +9,6 @@ export default class ModuleLoader {
     constructor(basepath: string, opt?: {
         autoFixNotFounds?: boolean;
     });
-    initTar(): Promise<typeof extract>;
     download(url: string, filename: string): Promise<string>;
     geturl(module: string, version?: string): Promise<{
         url: string;
@@ -18,5 +17,6 @@ export default class ModuleLoader {
     require<T>(module: string, opt?: {
         __require_stack?: string;
         version?: string;
+        debug?: boolean;
     }): Promise<T>;
 }

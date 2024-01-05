@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import type { extract } from './tar';
+import type { extract } from '../tar';
 import * as process from 'process';
 import semver from 'semver';
 
@@ -63,12 +63,13 @@ export default class ModuleLoader {
     async require<T>(module: string, opt: {
         __require_stack?: string;
         version?: string;
-} = {}): Promise<T> {
-        console.log('require', module, opt.version ?? 'latest', opt.__require_stack ?? '');
+        debug?: boolean;
+    } = {}): Promise<T> {
+        opt.debug && console.log('require', module, opt.version ?? 'latest', opt.__require_stack ?? '');
 
         const { url, _version } = await this.geturl(module, opt.version);
 
-        const version :string = opt.version || _version;
+        const version: string = opt.version || _version;
 
         if (!this.cache[`${module}@${version}`]) {
             const fpath = await this.download(url, `${module.split('/').join('$')}.tgz`);
@@ -83,7 +84,7 @@ export default class ModuleLoader {
             });
 
             // eslint-disable-next-line @typescript-eslint/no-var-requires
-            const pkg = require(path.resolve(path.join(folder, 'package.json')));
+            const pkg = JSON.parse((await fs.readFile(path.resolve(path.join(folder, 'package.json')))).toString());
 
             const entry = pkg?.main || 'index.js';
             const file = path.join(folder, entry);

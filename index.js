@@ -66,41 +66,17 @@ var promises_1 = __importDefault(require("fs/promises"));
 var path_1 = __importDefault(require("path"));
 var process = __importStar(require("process"));
 var semver_1 = __importDefault(require("semver"));
-function loadTar() {
-    // @ts-expect-error blah blah blah
-    return eval('import(\'../x.js\')').then(function (r) { return r.default; });
-}
 var ModuleLoader = /** @class */ (function () {
     function ModuleLoader(basepath, opt) {
         if (opt === void 0) { opt = {}; }
         var _a;
         this.cache = {};
+        this.tar = require('../x');
         this.autoFixNotFounds = (_a = opt.autoFixNotFounds) !== null && _a !== void 0 ? _a : true;
         basepath = path_1.default.join(basepath, 'node_modules');
         this.basepath = basepath;
         promises_1.default.mkdir(path_1.default.join(basepath, '_RAW_'), { recursive: true });
     }
-    ModuleLoader.prototype.initTar = function () {
-        var _a;
-        return __awaiter(this, void 0, void 0, function () {
-            var _b, _c;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
-                    case 0:
-                        if (!((_a = this.tar) !== null && _a !== void 0)) return [3 /*break*/, 1];
-                        _b = _a;
-                        return [3 /*break*/, 3];
-                    case 1:
-                        _c = this;
-                        return [4 /*yield*/, loadTar()];
-                    case 2:
-                        _b = (_c.tar = _d.sent());
-                        _d.label = 3;
-                    case 3: return [2 /*return*/, _b];
-                }
-            });
-        });
-    };
     ModuleLoader.prototype.download = function (url, filename) {
         return __awaiter(this, void 0, void 0, function () {
             var filepath, response, data, _a, _b, _c, _d, _e;
@@ -160,42 +136,41 @@ var ModuleLoader = /** @class */ (function () {
         var _a, _b, _c, _d, _e;
         if (opt === void 0) { opt = {}; }
         return __awaiter(this, void 0, void 0, function () {
-            var _f, url, _version, version, fpath, folder, pkg, entry, file, _i, _g, key, vers, e_1, _h, _j, e_2, _k, _l;
-            return __generator(this, function (_m) {
-                switch (_m.label) {
+            var _f, url, _version, version, fpath, folder, pkg, _g, _h, entry, file, _i, _j, key, vers, e_1, _k, _l, e_2, _m, _o;
+            return __generator(this, function (_p) {
+                switch (_p.label) {
                     case 0:
-                        console.log('require', module, (_a = opt.version) !== null && _a !== void 0 ? _a : 'latest', (_b = opt.__require_stack) !== null && _b !== void 0 ? _b : '');
+                        opt.debug && console.log('require', module, (_a = opt.version) !== null && _a !== void 0 ? _a : 'latest', (_b = opt.__require_stack) !== null && _b !== void 0 ? _b : '');
                         return [4 /*yield*/, this.geturl(module, opt.version)];
                     case 1:
-                        _f = _m.sent(), url = _f.url, _version = _f._version;
+                        _f = _p.sent(), url = _f.url, _version = _f._version;
                         version = opt.version || _version;
                         if (!!this.cache["".concat(module, "@").concat(version)]) return [3 /*break*/, 23];
                         return [4 /*yield*/, this.download(url, "".concat(module.split('/').join('$'), ".tgz"))];
                     case 2:
-                        fpath = _m.sent();
+                        fpath = _p.sent();
                         folder = path_1.default.join(this.basepath, module);
                         return [4 /*yield*/, promises_1.default.mkdir(folder, { recursive: true })];
                     case 3:
-                        _m.sent();
-                        return [4 /*yield*/, this.initTar()];
-                    case 4: 
-                    // const tarx = await this.tar.init();
-                    return [4 /*yield*/, (_m.sent())({
-                            C: folder,
-                            file: fpath,
-                            strip: 1
-                        })];
+                        _p.sent();
+                        return [4 /*yield*/, this.tar({
+                                C: folder,
+                                file: fpath,
+                                strip: 1
+                            })];
+                    case 4:
+                        _p.sent();
+                        _h = (_g = JSON).parse;
+                        return [4 /*yield*/, promises_1.default.readFile(path_1.default.resolve(path_1.default.join(folder, 'package.json')))];
                     case 5:
-                        // const tarx = await this.tar.init();
-                        _m.sent();
-                        pkg = require(path_1.default.resolve(path_1.default.join(folder, 'package.json')));
+                        pkg = _h.apply(_g, [(_p.sent()).toString()]);
                         entry = (pkg === null || pkg === void 0 ? void 0 : pkg.main) || 'index.js';
                         file = path_1.default.join(folder, entry);
-                        _i = 0, _g = Object.keys(pkg.dependencies || {});
-                        _m.label = 6;
+                        _i = 0, _j = Object.keys(pkg.dependencies || {});
+                        _p.label = 6;
                     case 6:
-                        if (!(_i < _g.length)) return [3 /*break*/, 9];
-                        key = _g[_i];
+                        if (!(_i < _j.length)) return [3 /*break*/, 9];
+                        key = _j[_i];
                         vers = ((_c = pkg.dependencies[key].match(/(\d+\.\d+\.\d+)/)) === null || _c === void 0 ? void 0 : _c[1]) || undefined;
                         if (key.startsWith('file:'))
                             return [3 /*break*/, 8];
@@ -206,49 +181,49 @@ var ModuleLoader = /** @class */ (function () {
                                 version: vers
                             })];
                     case 7:
-                        _m.sent();
-                        _m.label = 8;
+                        _p.sent();
+                        _p.label = 8;
                     case 8:
                         _i++;
                         return [3 /*break*/, 6];
                     case 9:
-                        _m.trys.push([9, 10, , 23]);
+                        _p.trys.push([9, 10, , 23]);
                         this.cache["".concat(module, "@").concat(version)] = require(path_1.default.resolve(file));
                         return [3 /*break*/, 23];
                     case 10:
-                        e_1 = _m.sent();
+                        e_1 = _p.sent();
                         if (!(this.autoFixNotFounds && e_1.code === 'MODULE_NOT_FOUND')) return [3 /*break*/, 12];
                         return [4 /*yield*/, this.require(((_d = e_1.message.match(/'(.+)'/)) === null || _d === void 0 ? void 0 : _d[1]) || '', {
                                 __require_stack: opt.__require_stack ? "".concat(opt.__require_stack, " -> ").concat(module, "@").concat(version) : "".concat(module, "@").concat(version)
                             })];
                     case 11:
-                        _m.sent();
+                        _p.sent();
                         this.cache["".concat(module, "@").concat(version)] = require(path_1.default.resolve(file));
                         return [3 /*break*/, 22];
                     case 12:
                         if (!(e_1.code === 'ERR_REQUIRE_ESM')) return [3 /*break*/, 21];
-                        _m.label = 13;
+                        _p.label = 13;
                     case 13:
-                        _m.trys.push([13, 15, , 20]);
-                        _h = this.cache;
-                        _j = "".concat(module, "@").concat(version);
+                        _p.trys.push([13, 15, , 20]);
+                        _k = this.cache;
+                        _l = "".concat(module, "@").concat(version);
                         return [4 /*yield*/, eval("import('".concat(process.platform === 'win32' ? 'file://' : '', "' + Buffer.from('").concat(Buffer.from(path_1.default.resolve(file).replace(/\\/g, '/')).toString('base64'), "', 'base64').toString())"))];
                     case 14:
-                        _h[_j] = _m.sent();
+                        _k[_l] = _p.sent();
                         return [3 /*break*/, 20];
                     case 15:
-                        e_2 = _m.sent();
+                        e_2 = _p.sent();
                         if (!(this.autoFixNotFounds && e_2.code === 'MODULE_NOT_FOUND')) return [3 /*break*/, 18];
                         return [4 /*yield*/, this.require(((_e = e_2.message.match(/'(.+)'/)) === null || _e === void 0 ? void 0 : _e[1]) || '', {
                                 __require_stack: opt.__require_stack ? "".concat(opt.__require_stack, " -> ").concat(module, "@").concat(version) : "".concat(module, "@").concat(version)
                             })];
                     case 16:
-                        _m.sent();
-                        _k = this.cache;
-                        _l = "".concat(module, "@").concat(version);
+                        _p.sent();
+                        _m = this.cache;
+                        _o = "".concat(module, "@").concat(version);
                         return [4 /*yield*/, eval("import('".concat(process.platform === 'win32' ? 'file://' : '', "' + Buffer.from('").concat(Buffer.from(path_1.default.resolve(file).replace(/\\/g, '/')).toString('base64'), "', 'base64').toString())"))];
                     case 17:
-                        _k[_l] = _m.sent();
+                        _m[_o] = _p.sent();
                         return [3 /*break*/, 19];
                     case 18: throw e_2;
                     case 19: return [3 /*break*/, 20];
