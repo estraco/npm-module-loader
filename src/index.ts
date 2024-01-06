@@ -71,16 +71,25 @@ export default class ModuleLoader {
         const version: string = opt.version || _version;
 
         if (!this.cache[`${module}@${version}`]) {
-            const fpath = await this.download(url, `${module.split('/').join('$')}.tgz`);
             const folder = path.join(this.basepath, module);
 
-            await fs.mkdir(folder, { recursive: true });
+            try {
+                await fs.access(path.join(this.basepath, module, 'package.json'));
 
-            await x({
-                C: folder,
-                file: fpath,
-                strip: 1
-            });
+                opt.debug && console.log('Cache hit:', module);
+            } catch {
+                opt.debug && console.log('Cache miss:', module);
+
+                const fpath = await this.download(url, `${module.split('/').join('$')}.tgz`);
+
+                await fs.mkdir(folder, { recursive: true });
+
+                await x({
+                    C: folder,
+                    file: fpath,
+                    strip: 1
+                });
+            }
 
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const pkg = JSON.parse((await fs.readFile(path.resolve(path.join(folder, 'package.json')))).toString());
